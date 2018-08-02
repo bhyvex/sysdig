@@ -192,6 +192,10 @@ bool sinsp_container_engine_docker::parse_docker(sinsp_container_manager* manage
 
 	// containers can be spawned using just the imageID as image name,
 	// with or without the hash prefix (e.g. sha256:)
+
+	// xxx/mstemm also need to write health check info to json and read from json
+	container->m_has_healthcheck = xxx
+
 	bool no_name = !container->m_imageid.empty() &&
 		strncmp(container->m_image.c_str(), container->m_imageid.c_str(),
 			MIN(container->m_image.length(), container->m_imageid.length())) == 0;
@@ -1288,6 +1292,39 @@ string sinsp_container_manager::get_container_name(sinsp_threadinfo* tinfo)
 	}
 
 	return res;
+}
+
+void sinsp_container_manager::identify_docker_healthcheck(sinsp_container_info &cinfo,
+							  sinsp_threadinfo *tinfo)
+{
+	// This thread is a part of a container healthcheck if its
+	// parent thread is part of a health check.
+	sinsp_threadinfo* ptinfo = tinfo->get_parent_thread();
+
+	if(!ptinfo)
+	{
+		return;
+	}
+
+	if(ptinfo->m_is_container_healthcheck)
+	{
+		tinfo->m_is_container_healthcheck = true;
+		return;
+	}
+
+	// Otherwise, the thread is a part of a container healthcheck if:
+	//
+	// 1. the comm and args match the container's healthcheck
+	// 2. the parent is *not* in a container
+	//
+	// This indicates the initial process of the healthcheck
+
+	if(cinfo.m_has_healthcheck &&
+	   cinfo.m_healthcheck_comm == tinfo->m_comm &&
+	   cinfo.m_healthcheck_args == tinfo->m_args &&
+	   ptinfo.m_container_id == "") {
+		tinfo->m_is_container_healthcheck = true;
+	}
 }
 
 void sinsp_container_manager::subscribe_on_new_container(new_container_cb callback)

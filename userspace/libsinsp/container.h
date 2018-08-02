@@ -70,7 +70,9 @@ public:
 			m_dest(""),
 			m_mode(""),
 			m_rdwr(false),
-			m_propagation("")
+			m_propagation(""),
+			m_has_healthcheck(false),
+			m_healthcheck_comm("")
 		{
 		}
 
@@ -111,6 +113,9 @@ public:
 		std::string m_mode;
 		bool m_rdwr;
 		std::string m_propagation;
+		bool has_healthcheck;
+		std::string m_healthcheck_comm;
+		std::vector<std::string> m_healthcheck_args;
 	};
 
 	sinsp_container_info():
@@ -241,6 +246,7 @@ public:
 	bool resolve_container(sinsp_threadinfo* tinfo, bool query_os_for_missing_info);
 	void dump_containers(scap_dumper_t* dumper);
 	string get_container_name(sinsp_threadinfo* tinfo);
+	void identify_docker_healthcheck(sinsp_threadinfo *tinfo);
 
 	bool container_exists(const string& container_id) const {
 		return m_containers.find(container_id) != m_containers.end();
